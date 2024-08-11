@@ -1,13 +1,14 @@
 "use client";
 
-import { CSSProperties, useState } from "react";
+import { CSSProperties, ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/client";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 interface LoginButtonProps {
     provider: Providers;
     colorCode: string;
-    children?: React.ReactNode;
+    children?: ReactNode;
+    supabaseClient: SupabaseClient;
 }
 
 type State = "error" | "idle" | "pending" | "success";
@@ -17,8 +18,6 @@ export enum Providers {
     DISCORD = "discord",
     GOOGLE = "google",
 }
-
-const supabase = createClient();
 
 function providerToSignInWith(provider: Providers) {
     switch (provider) {
@@ -31,14 +30,19 @@ function providerToSignInWith(provider: Providers) {
     }
 }
 
-export default function LoginButton({ provider, children, colorCode }: LoginButtonProps) {
+export default function LoginButton({
+    provider,
+    children,
+    colorCode,
+    supabaseClient,
+}: LoginButtonProps) {
     const [state, setState] = useState<State>("idle");
     const customClass = { "--color-code": colorCode } as CSSProperties;
 
     async function handleSignIn(provider: Providers) {
         try {
             setState("pending");
-            await supabase.auth.signInWithOAuth({
+            await supabaseClient.auth.signInWithOAuth({
                 provider: provider,
                 options: {
                     redirectTo: process.env.GOOGLE_CALLBACK_URL as string,
@@ -61,7 +65,7 @@ export default function LoginButton({ provider, children, colorCode }: LoginButt
             <Button
                 variant="outline"
                 size="lg"
-                onClick={() => handleSignIn(provider)}
+                onClick={async () => await handleSignIn(provider)}
                 disabled={state === "pending"}
                 className={`${provider} hover:bg-background relative mx-auto flex gap-4 border-none min-w-full`}
             >
